@@ -1,3 +1,4 @@
+require('dotenv').config();
 import { Octokit } from "@octokit/core";
 import open from 'open';
 import XLSX from 'xlsx';
@@ -36,7 +37,7 @@ function readAndMergeDescription(filePath) {
 }
 
 const octokit = new Octokit({
-    auth: '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',
+    auth: process.env.GITHUB_TOKEN,
 });
 
 async function openSSOUrl(error, callback) {
