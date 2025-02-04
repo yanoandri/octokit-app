@@ -22,9 +22,6 @@ function readAndMergeDescription(filePath) {
     const data = XLSX.utils.sheet_to_json(worksheet, { raw: false });
 
     return data.map((row) => {
-        // const raw = JSON.parse(row['_raw']);
-        // const removeMessage = raw.msg.replace('Error when processing invoice, ', '');
-        // const payload = JSON.parse(removeMessage);
         return {
             owner: 'xendit',
             repo: row['Repo'],
@@ -37,7 +34,7 @@ function readAndMergeDescription(filePath) {
 }
 
 const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN,
+    auth: '[Github token key]',
 });
 
 async function openSSOUrl(error, callback) {
@@ -117,8 +114,7 @@ async function convertToIssues(issues) {
 }
 
 (async () => {
-    // await getRepo('xendit', 'third-party-integration-service');
-    const issues = readAndMergeDescription('./tpi-ld-flag-removal.xlsx');
+    const issues = readAndMergeDescription('{replace with your current file}');
     console.log(issues);
 
     await convertToIssues(issues);
