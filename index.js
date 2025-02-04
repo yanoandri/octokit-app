@@ -117,5 +117,5 @@ async function convertToIssues(issues) {
     const issues = readAndMergeDescription('{replace with your current file}');
     console.log(issues);
 
-    await convertToIssues(issues);
+    await convertToIssues(issues); 
 })().catch(console.error);
