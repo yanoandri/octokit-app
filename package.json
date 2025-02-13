@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@octokit/core": "^6.1.2",
+    "dotenv": "^16.4.7",
     "open": "^10.1.0",
     "xlsx": "^0.18.5"
   }
