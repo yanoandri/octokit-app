@@ -21,10 +21,16 @@ function readAndMergeDescription(filePath) {
         return {
             owner: 'xendit',
             repo: row['Repo'],
-            title: row['Next Action'],
-            body: row['Next Action'],
-            decision: row['Decision'],
-            status: row['Status']
+            title: row['Title'],
+            body: row['Body'],
+            assignees: row['Assignees'],
+            status: row['Status'],
+            domain: row['Domain'],
+            impactType: row['Impact Type'],
+            priority: row['Priority'],
+            urgency: row['Urgency'],
+            effort: row['Effort'],
+            startDate: row['Start Date'],
         }
     });
 }
@@ -257,14 +263,16 @@ async function createIssues({ owner, repo, title, body, assignes, description })
 
         const { addProjectV2ItemById: { item: { id } } } = await assignProjectToIssue(mandatoryInfo.project.id, response.id);
 
+        const { domain, impactType, priority, urgency, effort } = description;
+
         const payload = {
-            'Domain': description['Domain'],
+            'Domain': domain,
             'Status': STATUS.TO_DO,
-            'Impact Type': description['Impact Type'],
-            'Priority': description['Priority'],
-            'Urgency': description['Urgency'],
-            'Effort': description['Effort'],
-            'Start Date': description['Start Date'] ? description['Start Date'] : new Date().toISOString()
+            'Impact Type': impactType,
+            'Priority': priority,
+            'Urgency': urgency,
+            'Effort': effort,
+            'Start Date': description.startDate ? description.startDate : new Date().toISOString()
         }
 
         for (const [key, value] of Object.entries(payload)) {
@@ -293,18 +301,20 @@ async function convertToIssues(issues) {
         }
 
         if (status === STATUS.TO_DO) {
+           const { owner, repo, title, body, domain, impactType, priority, urgency, effort } = issue;
+
            const request = {
-                owner: issue.owner,
-                repo: issue.repo,
-                title: issue.title,
-                body: issue.body,
+                owner,
+                repo,
+                title,
+                body,
                 description: {
-                    'Domain': issue['Domain'],
-                    'Status': status,
-                    'Impact Type': issue['Impact Type'],
-                    'Priority': issue['Priority'],
-                    'Urgency': issue['Urgency'],
-                    'Effort': issue['Effort'],
+                    domain,
+                    status,
+                    impactType,
+                    priority,
+                    urgency,
+                    effort,
                 }
             }
 
@@ -312,8 +322,8 @@ async function convertToIssues(issues) {
                 request.assignes = issue.assignees.includes(',') ? issue.assignees.split(',') : [issue.assignees];
             }
 
-            if (issue['Start Date'] && issue['Start Date'] !== '') {
-                request.description['Start Date'] = issue['Start Date'];
+            if (issue.startDate && issue.startDate !== '') {
+                request.description.startDate = issue.startDate;
             }
 
             await createIssues(request);
@@ -324,7 +334,7 @@ async function convertToIssues(issues) {
 }
 
 (async () => {
-    const issues = readAndMergeDescription('{replace with your current file}');
+    const issues = readAndMergeDescription(process.argv[2]);
 
     await convertToIssues(issues);
 })().catch(console.error);
