@@ -293,7 +293,9 @@ async function createIssues({ owner, repo, title, body, assignes, description })
 }
 
 async function convertToIssues(issues) {
+    const assignedIssues = [];
     for (const issue of issues) {
+        const newIssue = issue;
         const status = issue.status;
 
         if (status === STATUS.DONE) {
@@ -326,15 +328,43 @@ async function convertToIssues(issues) {
                 request.description.startDate = issue.startDate;
             }
 
-            await createIssues(request);
+            const data = await createIssues(request);
+
+            newIssue.prLink = data.html_url;
+            assignedIssues.push(newIssue);
         }
     }
 
-    return;
+    return assignedIssues;
+}
+
+function writeToExcel(data, filePath) {
+    const newMappedData = data.map((issue) => {
+        return {
+            'Repo': issue.repo,
+            'Title': issue.title,
+            'Body': issue.body,
+            'Assignees': issue.assignees,
+            'Status': issue.status,
+            'Domain': issue.domain,
+            'Impact Type': issue.impactType,
+            'Priority': issue.priority,
+            'Urgency': issue.urgency,
+            'Effort': issue.effort,
+            'Start Date': issue.startDate,
+            'PR Link': issue.prLink,
+        }
+    });
+    const ws = XLSX.utils.json_to_sheet(newMappedData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Generated');
+    XLSX.writeFile(wb, filePath);
 }
 
 (async () => {
     const issues = readAndMergeDescription(process.argv[2]);
 
     await convertToIssues(issues);
+
+    writeToExcel(issues, process.argv[3]);
 })().catch(console.error);
