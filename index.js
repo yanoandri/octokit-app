@@ -31,6 +31,8 @@ function readAndMergeDescription(filePath) {
             urgency: row['Urgency'],
             effort: row['Effort'],
             startDate: row['Start Date'],
+            endDate: row['End Date'],
+            prUrl: row['PR URL'],
         }
     });
 }
@@ -236,7 +238,7 @@ async function assignProjectToIssue(projectId, contentId) {
     return response;
 }
 
-async function createIssues({ owner, repo, title, body, assignes, description }) {
+async function createIssues({ owner, repo, title, body, assignes, description, prUrl }) {
     try {
         const newAssignes = [];
         const parent = {
@@ -259,6 +261,21 @@ async function createIssues({ owner, repo, title, body, assignes, description })
             });
         }
 
+        // Link PR if provided
+        if (prUrl) {
+            const prNumber = prUrl.split('/').pop();
+            try {
+                await octokit.request('PUT /repos/{owner}/{repo}/issues/{issue_number}/timeline', {
+                    owner,
+                    repo,
+                    issue_number: data.number,
+                    timeline_url: prUrl
+                });
+            } catch (error) {
+                console.log('PR linking failed, continuing...', error.message);
+            }
+        }
+
         const response = await getIssues(owner, repo, data.number);
 
         const { addProjectV2ItemById: { item: { id } } } = await assignProjectToIssue(mandatoryInfo.project.id, response.id);
@@ -273,6 +290,11 @@ async function createIssues({ owner, repo, title, body, assignes, description })
             'Urgency': urgency,
             'Effort': effort,
             'Start Date': description.startDate ? description.startDate : new Date().toISOString()
+        }
+
+        // Add End Date if provided
+        if (description.endDate) {
+            payload['End Date'] = description.endDate;
         }
 
         for (const [key, value] of Object.entries(payload)) {
@@ -328,6 +350,14 @@ async function convertToIssues(issues) {
                 request.description.startDate = issue.startDate;
             }
 
+            if (issue.endDate && issue.endDate !== '') {
+                request.description.endDate = issue.endDate;
+            }
+
+            if (issue.prUrl && issue.prUrl !== '') {
+                request.prUrl = issue.prUrl;
+            }
+
             const data = await createIssues(request);
 
             newIssue.prLink = data.html_url;
@@ -352,6 +382,7 @@ function writeToExcel(data, filePath) {
             'Urgency': issue.urgency,
             'Effort': issue.effort,
             'Start Date': issue.startDate,
+            'End Date': issue.endDate,
             'PR Link': issue.prLink,
         }
     });
